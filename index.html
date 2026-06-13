@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="我的資料庫">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>我的資料庫</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background-color: #f2f2f7; }
+    h2 { color: #1c1c1e; font-size: 24px; }
+    input { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #c7c7cc; margin-bottom: 12px; box-sizing: border-box; }
+    button.add-btn { background-color: #007aff; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-bottom: 20px; cursor: pointer; }
+    ul { list-style-type: none; padding: 0; }
+    li { background: white; padding: 16px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .text-content { font-size: 16px; color: #333; width: 80%; word-wrap: break-word; }
+    button.delete-btn { background-color: #ff3b30; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h2>我的資料庫</h2>
+  <input type="text" id="dataInput" placeholder="輸入新資料...">
+  <button class="add-btn" onclick="saveData()">加入資料</button>
+
+  <ul id="dataList"></ul>
+
+  <script>
+    // 讀取 iPhone 本地儲存的資料
+    function loadData() {
+      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
+      let list = document.getElementById('dataList');
+      list.innerHTML = '';
+      data.forEach((item, index) => {
+        list.innerHTML += `
+          <li>
+            <span class="text-content" onclick="editData(${index})">${item}</span>
+            <button class="delete-btn" onclick="deleteData(${index})">刪除</button>
+          </li>
+        `;
+      });
+    }
+
+    // 儲存新資料
+    function saveData() {
+      let input = document.getElementById('dataInput').value;
+      if (input.trim() === '') return;
+      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
+      data.unshift(input); // 將新資料加在最頂
+      localStorage.setItem('myAppDatabase', JSON.stringify(data));
+      document.getElementById('dataInput').value = '';
+      loadData();
+    }
+
+    // 刪除資料
+    function deleteData(index) {
+      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
+      data.splice(index, 1);
+      localStorage.setItem('myAppDatabase', JSON.stringify(data));
+      loadData();
+    }
+
+    // 修改資料 (點擊文字即可修改)
+    function editData(index) {
+      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
+      let newText = prompt("修改你的資料：", data[index]);
+      if (newText !== null && newText.trim() !== "") {
+        data[index] = newText;
+        localStorage.setItem('myAppDatabase', JSON.stringify(data));
+        loadData();
+      }
+    }
+
+    // 初始化
+    loadData();
+  </script>
+
+</body>
+</html>
