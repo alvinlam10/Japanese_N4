@@ -29,23 +29,48 @@
     .grid-container { 
       display: grid; 
       gap: 12px; 
-      /* 自動適應螢幕，每個按鈕最小 100px，最大佔滿可用空間 */
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
     }
     
-    /* 限制最大列數為 3 (利用媒體查詢) */
+    /* 限制最大列數為 3 */
     @media (min-width: 500px) {
       .grid-container { grid-template-columns: repeat(3, 1fr); }
     }
 
-    /* 卡片按鈕設計 */
-    .card { background: white; border-radius: 14px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: 0.2s; border: 2px solid transparent; display: flex; flex-direction: column; justify-content: center; min-height: 60px;}
-    .card .term { font-size: 18px; font-weight: bold; color: #1c1c1e; pointer-events: none;}
+    /* 兩行列表卡片設計 */
+    .card { 
+      background: white; 
+      border-radius: 14px; 
+      padding: 14px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06); 
+      cursor: pointer; 
+      transition: 0.2s; 
+      border: 2px solid transparent; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: flex-start; /* 改為靠左對齊，閱讀兩行文字更舒服 */
+      text-align: left; 
+      min-height: 75px;
+      box-sizing: border-box;
+    }
     
-    /* 隱藏的例句區塊 */
-    .example { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #c7c7cc; font-size: 14px; color: #555; text-align: left; }
-    .example.show { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    /* 第一行：單字/文法 */
+    .card .term { 
+      font-size: 17px; 
+      font-weight: bold; 
+      color: #1c1c1e; 
+      margin-bottom: 6px; 
+      word-break: break-all;
+    }
+    
+    /* 第二行：例句/解釋 (取消隱藏，直接顯示) */
+    .card .example { 
+      font-size: 13px; 
+      color: #636366; 
+      word-break: break-all;
+      width: 100%;
+      line-height: 1.4;
+    }
 
     /* 批次刪除模式 */
     body.delete-mode .card { border-color: #e5e5ea; }
@@ -78,141 +103,3 @@
   <button class="confirm-del-btn" onclick="confirmDelete()">⚠️ 確認刪除選定項目</button>
 
   <script>
-    let currentCategory = '單字';
-    let isDeleteMode = false;
-    let selectedForDelete = new Set();
-
-    // 初始化讀取資料
-    function init() {
-      if (!localStorage.getItem('N4Cards')) {
-        const demoData = [
-          { id: Date.now()+1, category: '單字', term: '一生懸命', example: '彼は一生懸命勉強している。' },
-          { id: Date.now()+2, category: '文法', term: '～たばかり', example: '日本に来たばかりです。(剛來日本)' },
-          { id: Date.now()+3, category: '文法', term: '～たら', example: '雨が降ったら、行きません。(如果下雨就不去)' }
-        ];
-        localStorage.setItem('N4Cards', JSON.stringify(demoData));
-      }
-      renderCards();
-    }
-
-    // 切換 單字 / 文法 分頁
-    function switchTab(category) {
-      currentCategory = category;
-      document.getElementById('tab-單字').classList.toggle('active', category === '單字');
-      document.getElementById('tab-文法').classList.toggle('active', category === '文法');
-      isDeleteMode = false; // 切換分頁時關閉刪除模式
-      updateDeleteUI();
-      renderCards();
-    }
-
-    // 批次加入 (自動分析冒號或全形冒號)
-    function batchAdd() {
-      const input = document.getElementById('bulkInput').value;
-      if (!input.trim()) return alert("請輸入內容！");
-
-      let data = JSON.parse(localStorage.getItem('N4Cards')) || [];
-      const lines = input.split('\n').filter(line => line.trim() !== '');
-      
-      let addedCount = 0;
-      lines.forEach(line => {
-        // 支援多種分隔符號：中文冒號、英文冒號、直線
-        const parts = line.split(/[:：|]/);
-        const term = parts[0].trim();
-        const example = parts.length > 1 ? parts.slice(1).join(':').trim() : '無例句 (點擊按鈕可長按修改)';
-        
-        // 檢查是否重複 (同類別且同單字)
-        const isDuplicate = data.some(item => item.category === currentCategory && item.term === term);
-        
-        if (!isDuplicate) {
-          data.unshift({ id: Date.now() + Math.random(), category: currentCategory, term: term, example: example });
-          addedCount++;
-        }
-      });
-
-      localStorage.setItem('N4Cards', JSON.stringify(data));
-      document.getElementById('bulkInput').value = '';
-      alert(`成功加入 ${addedCount} 筆不重複的${currentCategory}！`);
-      renderCards();
-    }
-
-    // 渲染卡片 (網格按鈕)
-    function renderCards() {
-      const data = JSON.parse(localStorage.getItem('N4Cards')) || [];
-      const container = document.getElementById('cardContainer');
-      container.innerHTML = '';
-
-      const filteredData = data.filter(item => item.category === currentCategory);
-
-      filteredData.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.id = `card-${item.id}`;
-        card.onclick = () => handleCardClick(item.id, card);
-
-        card.innerHTML = `
-          <div class="term">${item.term}</div>
-          <div class="example" id="ex-${item.id}">${item.example}</div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // 處理卡片點擊事件
-    function handleCardClick(id, cardElement) {
-      if (isDeleteMode) {
-        // 批次刪除模式：選取或取消選取
-        if (selectedForDelete.has(id)) {
-          selectedForDelete.delete(id);
-          cardElement.classList.remove('selected-for-delete');
-        } else {
-          selectedForDelete.add(id);
-          cardElement.classList.add('selected-for-delete');
-        }
-      } else {
-        // 正常學習模式：展開/收起例句
-        const exampleDiv = document.getElementById(`ex-${id}`);
-        exampleDiv.classList.toggle('show');
-      }
-    }
-
-    // 開關批次刪除模式
-    function toggleDeleteMode() {
-      isDeleteMode = !isDeleteMode;
-      selectedForDelete.clear();
-      updateDeleteUI();
-    }
-
-    function updateDeleteUI() {
-      document.body.classList.toggle('delete-mode', isDeleteMode);
-      document.getElementById('delModeBtn').innerText = isDeleteMode ? '取消刪除' : '🗑️ 批次刪除';
-      document.getElementById('delModeBtn').style.backgroundColor = isDeleteMode ? '#8e8e93' : '#ff3b30';
-      
-      // 清除所有卡片的選取狀態和展開狀態
-      document.querySelectorAll('.card').forEach(card => {
-        card.classList.remove('selected-for-delete');
-        card.querySelector('.example').classList.remove('show');
-      });
-    }
-
-    // 確認執行批次刪除
-    function confirmDelete() {
-      if (selectedForDelete.size === 0) {
-        toggleDeleteMode();
-        return;
-      }
-      
-      if (confirm(`確定要刪除選中的 ${selectedForDelete.size} 個項目嗎？`)) {
-        let data = JSON.parse(localStorage.getItem('N4Cards')) || [];
-        data = data.filter(item => !selectedForDelete.has(item.id));
-        localStorage.setItem('N4Cards', JSON.stringify(data));
-        
-        isDeleteMode = false;
-        updateDeleteUI();
-        renderCards();
-      }
-    }
-
-    init();
-  </script>
-</body>
-</html>
