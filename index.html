@@ -3,78 +3,186 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 讓網頁變成全螢幕 App 模式 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="我的資料庫">
+  <meta name="apple-mobile-web-app-title" content="N4衝刺">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>我的資料庫</title>
+  <title>N4 單字文法資料庫</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background-color: #f2f2f7; }
-    h2 { color: #1c1c1e; font-size: 24px; }
-    input { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #c7c7cc; margin-bottom: 12px; box-sizing: border-box; }
-    button.add-btn { background-color: #007aff; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-bottom: 20px; cursor: pointer; }
-    ul { list-style-type: none; padding: 0; }
-    li { background: white; padding: 16px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .text-content { font-size: 16px; color: #333; width: 80%; word-wrap: break-word; }
-    button.delete-btn { background-color: #ff3b30; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    /* 仿 iOS 介面設計 */
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background-color: #f2f2f7; margin: 0; }
+    h2 { color: #1c1c1e; font-size: 24px; margin-top: 15px; font-weight: 800; }
+    .input-group { background: white; padding: 15px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    select, input, textarea { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #e5e5ea; margin-bottom: 12px; box-sizing: border-box; background: #fafafa; }
+    textarea { resize: none; height: 120px; display: none; }
+    button { background-color: #007aff; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+    button.secondary { background-color: #f2f2f7; color: #007aff; margin-bottom: 0; }
+    
+    /* 分類標籤列 */
+    .filters { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+    .filter-btn { background: #e5e5ea; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 14px; border: none; flex-shrink: 0; width: auto; margin: 0; }
+    .filter-btn.active { background: #1c1c1e; color: white; }
+
+    /* 列表設計 */
+    ul { list-style: none; padding: 0; margin: 0; padding-bottom: 50px; }
+    li { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .tag { font-size: 12px; font-weight: bold; color: #fff; background: #ff9500; padding: 4px 8px; border-radius: 6px; align-self: flex-start; margin-bottom: 8px; }
+    .tag.grammar { background: #34c759; }
+    .tag.sentence { background: #af52de; }
+    .content { font-size: 17px; color: #1c1c1e; line-height: 1.5; word-wrap: break-word; margin-bottom: 12px; font-weight: 500;}
+    
+    /* 動作按鈕 */
+    .actions { display: flex; justify-content: flex-end; gap: 15px; border-top: 1px solid #f2f2f7; padding-top: 10px; }
+    .action-btn { background: none; border: none; color: #007aff; font-size: 15px; font-weight: 600; padding: 0; width: auto; margin: 0; cursor: pointer; }
+    .action-btn.delete { color: #ff3b30; }
   </style>
 </head>
 <body>
 
-  <h2>我的資料庫</h2>
-  <input type="text" id="dataInput" placeholder="輸入新資料...">
-  <button class="add-btn" onclick="saveData()">加入資料</button>
+  <h2>📘 N4 衝刺資料庫</h2>
+
+  <div class="input-group">
+    <select id="dataType">
+      <option value="單字">📌 單字</option>
+      <option value="文法">📖 文法</option>
+      <option value="句子">💬 句子</option>
+    </select>
+    
+    <!-- 單筆輸入 -->
+    <input type="text" id="dataInput" placeholder="輸入日文單字、文法或句子...">
+    <!-- 大量貼上 -->
+    <textarea id="bulkInput" placeholder="在此貼上你的對話紀錄，每換一行會自動變成一筆資料..."></textarea>
+    
+    <button onclick="saveData()" id="saveBtn">新增加入</button>
+    <button class="secondary" onclick="toggleBulk()" id="toggleBtn">切換為「大量貼上」模式</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" onclick="filterData('all')">全部</button>
+    <button class="filter-btn" onclick="filterData('單字')">單字</button>
+    <button class="filter-btn" onclick="filterData('文法')">文法</button>
+    <button class="filter-btn" onclick="filterData('句子')">句子</button>
+  </div>
 
   <ul id="dataList"></ul>
 
   <script>
-    // 讀取 iPhone 本地儲存的資料
+    let isBulk = false;
+    let currentFilter = 'all';
+
+    // 預設示範資料 (為你先放了幾個 N4 必考點)
+    const defaultData = [
+      { type: '文法', text: '～たばかり (剛做完～)' },
+      { type: '單字', text: '一生懸命 (いっしょうけんめい) - 拼命地' },
+      { type: '句子', text: '日本語を勉強し続けます。(我會繼續學日文。)' }
+    ];
+
+    // 初始化讀取
+    function init() {
+      if (!localStorage.getItem('N4Database')) {
+        localStorage.setItem('N4Database', JSON.stringify(defaultData));
+      }
+      loadData();
+    }
+
+    // 切換輸入模式
+    function toggleBulk() {
+      isBulk = !isBulk;
+      document.getElementById('dataInput').style.display = isBulk ? 'none' : 'block';
+      document.getElementById('bulkInput').style.display = isBulk ? 'block' : 'none';
+      document.getElementById('saveBtn').innerText = isBulk ? '批次自動匯入' : '新增加入';
+      document.getElementById('toggleBtn').innerText = isBulk ? '返回「單筆輸入」' : '切換為「大量貼上」模式';
+    }
+
+    // 儲存資料
+    function saveData() {
+      let type = document.getElementById('dataType').value;
+      let data = JSON.parse(localStorage.getItem('N4Database')) || [];
+
+      if (isBulk) {
+        let text = document.getElementById('bulkInput').value;
+        let lines = text.split('\n').filter(line => line.trim() !== ''); // 以換行符號分割
+        if (lines.length === 0) return;
+        
+        lines.forEach(line => {
+          data.unshift({ type: type, text: line.trim() });
+        });
+        document.getElementById('bulkInput').value = '';
+        toggleBulk(); // 匯入完切回單筆模式
+        alert(`成功匯入 ${lines.length} 筆資料！`);
+      } else {
+        let input = document.getElementById('dataInput').value;
+        if (input.trim() === '') return;
+        data.unshift({ type: type, text: input.trim() });
+        document.getElementById('dataInput').value = '';
+      }
+
+      // 【關鍵功能】過濾完全重複的資料
+      const uniqueData = Array.from(new Set(data.map(a => JSON.stringify(a)))).map(a => JSON.parse(a));
+      
+      localStorage.setItem('N4Database', JSON.stringify(uniqueData));
+      loadData();
+    }
+
+    // 分類篩選
+    function filterData(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      loadData();
+    }
+
+    // 渲染畫面
     function loadData() {
-      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
+      let data = JSON.parse(localStorage.getItem('N4Database')) || [];
       let list = document.getElementById('dataList');
       list.innerHTML = '';
-      data.forEach((item, index) => {
+
+      let filteredData = currentFilter === 'all' ? data : data.filter(item => item.type === currentFilter);
+
+      filteredData.forEach((item) => {
+        // 找出在原始陣列中的 index 以便準確刪除/修改
+        let originalIndex = data.findIndex(d => d.text === item.text && d.type === item.type);
+        
+        let tagClass = 'tag';
+        if (item.type === '文法') tagClass += ' grammar';
+        if (item.type === '句子') tagClass += ' sentence';
+
         list.innerHTML += `
           <li>
-            <span class="text-content" onclick="editData(${index})">${item}</span>
-            <button class="delete-btn" onclick="deleteData(${index})">刪除</button>
+            <div class="${tagClass}">${item.type}</div>
+            <div class="content">${item.text}</div>
+            <div class="actions">
+              <button class="action-btn" onclick="editData(${originalIndex})">修改</button>
+              <button class="action-btn delete" onclick="deleteData(${originalIndex})">刪除</button>
+            </div>
           </li>
         `;
       });
     }
 
-    // 儲存新資料
-    function saveData() {
-      let input = document.getElementById('dataInput').value;
-      if (input.trim() === '') return;
-      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
-      data.unshift(input); // 將新資料加在最頂
-      localStorage.setItem('myAppDatabase', JSON.stringify(data));
-      document.getElementById('dataInput').value = '';
-      loadData();
-    }
-
     // 刪除資料
     function deleteData(index) {
-      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
-      data.splice(index, 1);
-      localStorage.setItem('myAppDatabase', JSON.stringify(data));
-      loadData();
-    }
-
-    // 修改資料 (點擊文字即可修改)
-    function editData(index) {
-      let data = JSON.parse(localStorage.getItem('myAppDatabase')) || [];
-      let newText = prompt("修改你的資料：", data[index]);
-      if (newText !== null && newText.trim() !== "") {
-        data[index] = newText;
-        localStorage.setItem('myAppDatabase', JSON.stringify(data));
+      if(confirm('確定要刪除這筆資料嗎？')) {
+        let data = JSON.parse(localStorage.getItem('N4Database')) || [];
+        data.splice(index, 1);
+        localStorage.setItem('N4Database', JSON.stringify(data));
         loadData();
       }
     }
 
-    // 初始化
-    loadData();
-  </script>
+    // 修改資料
+    function editData(index) {
+      let data = JSON.parse(localStorage.getItem('N4Database')) || [];
+      let newText = prompt("修改內容：", data[index].text);
+      if (newText !== null && newText.trim() !== "") {
+        data[index].text = newText.trim();
+        localStorage.setItem('N4Database', JSON.stringify(data));
+        loadData();
+      }
+    }
 
+    init();
+  </script>
 </body>
 </html>
