@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="N4記憶卡">
+  <meta name="apple-mobile-web-app-title" content="N4雲端卡">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>N4 記憶卡 App</title>
+  <title>N4 雲端記憶卡 App (JSONBin 版)</title>
   <style>
-    /* 基礎設定 */
+    /* 基礎與版面設計 */
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background-color: #f2f2f7; margin: 0; }
     h2 { color: #1c1c1e; font-size: 22px; margin-top: 10px; margin-bottom: 20px; font-weight: 800; text-align: center; }
     
-    /* 頂部控制區 (保留單字、文法分類按鈕) */
     .control-panel { background: white; padding: 15px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
     .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; background: #e5e5ea; color: #8e8e93; cursor: pointer; transition: 0.2s; }
@@ -25,102 +24,118 @@
     .add-btn { background-color: #34c759; }
     .del-mode-btn { background-color: #ff3b30; }
     
-    /* 動態網格佈局 (手機1-2列，平板/桌面最多3列) */
-    .grid-container { 
-      display: grid; 
-      gap: 12px; 
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-    }
-    
-    /* 限制最大列數為 3 */
-    @media (min-width: 500px) {
-      .grid-container { grid-template-columns: repeat(3, 1fr); }
-    }
+    .grid-container { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    @media (min-width: 500px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
 
-    /* 兩行列表卡片設計 (保留按鈕外觀) */
-    .card { 
-      background: white; 
-      border-radius: 14px; 
-      padding: 14px; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06); 
-      cursor: pointer; 
-      transition: 0.2s; 
-      border: 2px solid transparent; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: flex-start; 
-      text-align: left; 
-      min-height: 80px;
-      box-sizing: border-box;
-    }
-    
-    /* 第一行：單字/文法 */
-    .card .term { 
-      font-size: 17px; 
-      font-weight: bold; 
-      color: #1c1c1e; 
-      margin-bottom: 6px; 
-      word-break: break-all;
-    }
-    
-    /* 第二行：例句/解釋 (兩行直觀顯示) */
-    .card .example { 
-      font-size: 13px; 
-      color: #636366; 
-      word-break: break-all;
-      width: 100%;
-      line-height: 1.4;
-    }
+    /* 三行卡片設計 */
+    .card { background: white; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: 0.2s; border: 2px solid transparent; display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 90px; box-sizing: border-box;}
+    .card .term { font-size: 17px; font-weight: bold; color: #1c1c1e; margin-bottom: 4px; word-break: break-all;}
+    .card .meaning { font-size: 14px; color: #007aff; font-weight: 600; margin-bottom: 4px; word-break: break-all;}
+    .card .example { font-size: 13px; color: #636366; word-break: break-all; width: 100%; line-height: 1.4; border-top: 1px dashed #e5e5ea; padding-top: 4px; margin-top: 2px;}
 
-    /* 批次刪除模式 */
     body.delete-mode .card { border-color: #e5e5ea; }
     body.delete-mode .card.selected-for-delete { border-color: #ff3b30; background-color: #ffebee; }
     
     .confirm-del-btn { display: none; background-color: #ff3b30; color: white; padding: 15px; width: 100%; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; position: fixed; bottom: 30px; left: 0; width: calc(100% - 40px); margin: 0 20px; box-shadow: 0 4px 15px rgba(255,59,48,0.4); z-index: 100;}
     body.delete-mode .confirm-del-btn { display: block; }
+    
+    .loading { text-align: center; color: #8e8e93; font-size: 14px; margin-top: 20px; font-weight: bold;}
+    .top-bar-action { text-align: right; margin-bottom: 10px;}
+    .refresh-btn { background: none; border: none; color: #007aff; font-size: 14px; font-weight: bold; cursor: pointer; padding: 5px 10px;}
   </style>
 </head>
 <body>
 
-  <h2>🔖 N4 記憶卡 App</h2>
+  <h2>📦 N4 雲端記憶卡 App</h2>
 
   <div class="control-panel">
+    <div class="top-bar-action">
+      <button class="refresh-btn" onclick="fetchData()">🔄 手動重新載入</button>
+    </div>
+    
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('單字')" id="tab-單字">📌 單字</button>
       <button class="tab-btn" onclick="switchTab('文法')" id="tab-文法">📖 文法</button>
     </div>
 
-    <textarea id="bulkInput" placeholder="批次加入格式：單字或文法 : 例句&#10;例如：&#10;一生懸命 : 彼は一生懸命勉強している。&#10;～て形 : 書いて、食べて..."></textarea>
+    <textarea id="bulkInput" placeholder="批次加入格式：單字/文法 : 意思 : 例句&#10;例如：&#10;～たばかり : 剛做完～ : 日本に来たばかりです。"></textarea>
     
     <div class="btn-group">
-      <button class="action-btn add-btn" onclick="batchAdd()">➕ 批次加入</button>
+      <button class="action-btn add-btn" onclick="batchAdd()">➕ 同步加入雲端</button>
       <button class="action-btn del-mode-btn" onclick="toggleDeleteMode()" id="delModeBtn">🗑️ 批次刪除</button>
     </div>
   </div>
 
+  <div id="loadingText" class="loading">連線至 JSONBin 資料庫中...</div>
   <div class="grid-container" id="cardContainer"></div>
 
-  <button class="confirm-del-btn" onclick="confirmDelete()">⚠️ 確認刪除選定項目</button>
+  <button class="confirm-del-btn" onclick="confirmDelete()">⚠️ 確認刪除並同步雲端</button>
 
   <script>
+    // 🔴🔴🔴 請將這裡替換成你的 JSONBin 資料 🔴🔴🔴
+    const BIN_ID = 6a2d4008f5f4af5e29eb5456;
+    const API_KEY = $2a$10$nX7V5e3FEDFjNN5LmD1aZelsmQdhV4MijDYWX96Qtw3Kpk5U1Ol5G; 
+    // ------------------------------------------------
+
     let currentCategory = '單字';
     let isDeleteMode = false;
     let selectedForDelete = new Set();
+    let cloudData = []; 
 
-    // 初始化讀取資料
-    function init() {
-      if (!localStorage.getItem('N4Cards')) {
-        const demoData = [
-          { id: Date.now()+1, category: '單字', term: '一生懸命', example: '彼は一生懸命勉強している。' },
-          { id: Date.now()+2, category: '文法', term: '～たばかり', example: '日本に来たばかりです。' },
-          { id: Date.now()+3, category: '文法', term: '～たら', example: '雨が降ったら、行きません。' }
-        ];
-        localStorage.setItem('N4Cards', JSON.stringify(demoData));
+    // 初始化與讀取雲端資料
+    async function fetchData() {
+      const loadingEl = document.getElementById('loadingText');
+      
+      if (BIN_ID === '請貼上你的_BIN_ID' || !API_KEY) {
+        loadingEl.innerText = '⚠️ 請先在程式碼中填寫 JSONBin 的 BIN_ID 與 API_KEY';
+        loadingEl.style.color = '#ff3b30';
+        return;
       }
-      renderCards();
+
+      loadingEl.style.display = 'block';
+      loadingEl.innerText = '⬇️ 正在從雲端下載資料...';
+
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': API_KEY }
+        });
+        const data = await response.json();
+        
+        if (data.record && data.record.cards) {
+          cloudData = data.record.cards;
+        }
+        loadingEl.style.display = 'none';
+        renderCards();
+      } catch (error) {
+        loadingEl.innerText = '❌ 讀取失敗，請檢查網路或金鑰設定';
+        console.error("Fetch Error:", error);
+      }
     }
 
-    // 切換 單字 / 文法 分頁
+    // 將資料整包推上雲端
+    async function syncToCloud() {
+      const loadingEl = document.getElementById('loadingText');
+      loadingEl.style.display = 'block';
+      loadingEl.innerText = '⬆️ 正在同步至雲端...';
+
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify({ cards: cloudData })
+        });
+        loadingEl.style.display = 'none';
+        renderCards();
+      } catch (error) {
+        alert('同步失敗，請稍後再試！');
+        loadingEl.style.display = 'none';
+        console.error("Sync Error:", error);
+      }
+    }
+
     function switchTab(category) {
       currentCategory = category;
       document.getElementById('tab-單字').classList.toggle('active', category === '單字');
@@ -130,41 +145,48 @@
       renderCards();
     }
 
-    // 批次加入
-    function batchAdd() {
+    async function batchAdd() {
       const input = document.getElementById('bulkInput').value;
       if (!input.trim()) return alert("請輸入內容！");
 
-      let data = JSON.parse(localStorage.getItem('N4Cards')) || [];
       const lines = input.split('\n').filter(line => line.trim() !== '');
-      
       let addedCount = 0;
-      lines.forEach(line => {
+
+      for (const line of lines) {
         const parts = line.split(/[:：|]/);
-        const term = parts[0].trim();
-        const example = parts.length > 1 ? parts.slice(1).join(':').trim() : '無例句/解釋';
+        const term = parts[0] ? parts[0].trim() : '';
+        const meaning = parts[1] ? parts[1].trim() : '無解釋';
+        const example = parts.length > 2 ? parts.slice(2).join(':').trim() : '';
         
-        const isDuplicate = data.some(item => item.category === currentCategory && item.term === term);
+        const isDuplicate = cloudData.some(item => item.category === currentCategory && item.term === term);
         
-        if (!isDuplicate) {
-          data.unshift({ id: Date.now() + Math.random(), category: currentCategory, term: term, example: example });
+        if (!isDuplicate && term !== '') {
+          // 加入到陣列的最前面 (最新加入的排在最上面)
+          cloudData.unshift({
+            id: Date.now() + Math.random(),
+            category: currentCategory,
+            term: term,
+            meaning: meaning,
+            example: example
+          });
           addedCount++;
         }
-      });
+      }
 
-      localStorage.setItem('N4Cards', JSON.stringify(data));
       document.getElementById('bulkInput').value = '';
-      alert(`成功加入 ${addedCount} 筆不重複的${currentCategory}！`);
-      renderCards();
+      if(addedCount > 0) {
+        await syncToCloud(); // 整包上傳
+        alert(`成功將 ${addedCount} 筆資料同步至 JSONBin！`);
+      } else {
+        alert(`沒有加入新資料（可能都是重複的）。`);
+      }
     }
 
-    // 渲染卡片
     function renderCards() {
-      const data = JSON.parse(localStorage.getItem('N4Cards')) || [];
       const container = document.getElementById('cardContainer');
       container.innerHTML = '';
 
-      const filteredData = data.filter(item => item.category === currentCategory);
+      const filteredData = cloudData.filter(item => item.category === currentCategory);
 
       filteredData.forEach(item => {
         const card = document.createElement('div');
@@ -172,18 +194,20 @@
         card.id = `card-${item.id}`;
         card.onclick = () => handleCardClick(item.id, card);
 
+        let exampleHTML = item.example ? `<div class="example">${item.example}</div>` : '';
+        let displayMeaning = item.meaning || '無解釋';
+
         card.innerHTML = `
           <div class="term">${item.term}</div>
-          <div class="example">${item.example}</div>
+          <div class="meaning">${displayMeaning}</div>
+          ${exampleHTML}
         `;
         container.appendChild(card);
       });
     }
 
-    // 處理卡片點擊事件
     function handleCardClick(id, cardElement) {
       if (isDeleteMode) {
-        // 批次刪除模式：點擊來進行勾選
         if (selectedForDelete.has(id)) {
           selectedForDelete.delete(id);
           cardElement.classList.remove('selected-for-delete');
@@ -194,7 +218,6 @@
       }
     }
 
-    // 開關批次刪除模式
     function toggleDeleteMode() {
       isDeleteMode = !isDeleteMode;
       selectedForDelete.clear();
@@ -211,25 +234,26 @@
       });
     }
 
-    // 確認執行批次刪除
-    function confirmDelete() {
+    async function confirmDelete() {
       if (selectedForDelete.size === 0) {
         toggleDeleteMode();
         return;
       }
       
-      if (confirm(`確定要刪除選中的 ${selectedForDelete.size} 個項目嗎？`)) {
-        let data = JSON.parse(localStorage.getItem('N4Cards')) || [];
-        data = data.filter(item => !selectedForDelete.has(item.id));
-        localStorage.setItem('N4Cards', JSON.stringify(data));
+      if (confirm(`確定要從雲端刪除這 ${selectedForDelete.size} 個項目嗎？`)) {
+        // 從本機陣列中濾除被選中的項目
+        cloudData = cloudData.filter(item => !selectedForDelete.has(item.id));
         
         isDeleteMode = false;
         updateDeleteUI();
-        renderCards();
+        
+        // 執行同步覆蓋雲端
+        await syncToCloud();
       }
     }
 
-    init();
+    // 啟動 App 時執行讀取
+    fetchData();
   </script>
 </body>
 </html>
