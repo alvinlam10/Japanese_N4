@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="N4雲端卡">
+  <meta name="apple-mobile-web-app-title" content="N4 Flash Card">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>N4 Flash Cards</title>
   <style>
@@ -72,15 +72,15 @@
     <textarea id="bulkInput" placeholder="批次加入格式：單字/文法 : 意思 : 例句&#10;例如：&#10;～たばかり : 剛做完～ : 日本に来たばかりです。"></textarea>
     
     <div class="btn-group">
-      <button class="action-btn add-btn" onclick="batchAdd()">➕ 同步加入雲端</button>
-      <button class="action-btn del-mode-btn" onclick="toggleDeleteMode()" id="delModeBtn">🗑️ 批次刪除</button>
+      <button class="action-btn add-btn" onclick="batchAdd()">➕ Add</button>
+      <button class="action-btn del-mode-btn" onclick="toggleDeleteMode()" id="delModeBtn">🗑️ Delete</button>
     </div>
   </div>
 
-  <div id="loadingText" class="loading">連線至 JSONBin 資料庫中...</div>
+  <div id="loadingText" class="loading">Conneting to JSONBin Database...</div>
   <div class="grid-container" id="cardContainer"></div>
 
-  <button class="confirm-del-btn" onclick="confirmDelete()">⚠️ 確認刪除並同步雲端</button>
+  <button class="confirm-del-btn" onclick="confirmDelete()">⚠️ Confirm Delete</button>
 
   <script>
     // 🔴🔴🔴 請務必貼回你原本的 BIN_ID 與 API_KEY，這樣資料才會回來！ 🔴🔴🔴
